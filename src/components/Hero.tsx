@@ -10,9 +10,12 @@ export function Hero() {
     const video = videoRef.current;
     if (!video) return;
 
+    let isIntentionalPause = false;
+
     // Attempt to play the video with error handling
     const playVideo = async () => {
       try {
+        isIntentionalPause = false;
         await video.play();
       } catch (error) {
         console.warn('Video autoplay failed:', error);
@@ -26,9 +29,17 @@ export function Hero() {
     };
 
     // Ensure video keeps playing if it pauses unexpectedly
+    // This prevents the video from stopping due to browser policies or interference
     const handlePause = () => {
-      if (video.readyState >= 3) { // HAVE_FUTURE_DATA or higher
-        playVideo();
+      // Only auto-resume if:
+      // 1. The video has enough data to play
+      // 2. The pause wasn't intentional (programmatic)
+      // 3. Small delay to prevent infinite loop
+      if (!isIntentionalPause && video.readyState >= 3) {
+        setTimeout(() => {
+          if (!video.paused) return; // Already playing
+          playVideo();
+        }, 100);
       }
     };
 
@@ -43,6 +54,7 @@ export function Hero() {
 
     // Cleanup
     return () => {
+      isIntentionalPause = true;
       video.removeEventListener('canplay', handleCanPlay);
       video.removeEventListener('pause', handlePause);
     };
@@ -55,7 +67,7 @@ export function Hero() {
         <div className="absolute inset-0 bg-black/60 z-10" />
         <video 
           ref={videoRef}
-          className="w-full h-full object-cover" 
+          className="w-full h-full object-cover relative z-0" 
           autoPlay 
           muted 
           loop 
