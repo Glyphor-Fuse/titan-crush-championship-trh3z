@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 
 export function Hero() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const isIntentionalPauseRef = useRef(false);
+  const resumeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -13,6 +15,7 @@ export function Hero() {
     // Attempt to play the video with error handling
     const playVideo = async () => {
       try {
+        isIntentionalPauseRef.current = false;
         await video.play();
       } catch (error) {
         console.warn('Video autoplay failed:', error);
@@ -26,9 +29,17 @@ export function Hero() {
     };
 
     // Ensure video keeps playing if it pauses unexpectedly
+    // This prevents the video from stopping due to browser policies or interference
     const handlePause = () => {
-      if (video.readyState >= 3) { // HAVE_FUTURE_DATA or higher
-        playVideo();
+      // Only auto-resume if:
+      // 1. The video has enough data to play
+      // 2. The pause wasn't intentional (programmatic)
+      // 3. Small delay to prevent infinite loop
+      if (!isIntentionalPauseRef.current && video.readyState >= 3) {
+        resumeTimeoutRef.current = setTimeout(() => {
+          if (!video.paused) return; // Already playing
+          playVideo();
+        }, 100);
       }
     };
 
@@ -43,6 +54,10 @@ export function Hero() {
 
     // Cleanup
     return () => {
+      isIntentionalPauseRef.current = true;
+      if (resumeTimeoutRef.current) {
+        clearTimeout(resumeTimeoutRef.current);
+      }
       video.removeEventListener('canplay', handleCanPlay);
       video.removeEventListener('pause', handlePause);
     };
@@ -55,7 +70,7 @@ export function Hero() {
         <div className="absolute inset-0 bg-black/60 z-10" />
         <video 
           ref={videoRef}
-          className="w-full h-full object-cover" 
+          className="w-full h-full object-cover relative z-0" 
           autoPlay 
           muted 
           loop 
