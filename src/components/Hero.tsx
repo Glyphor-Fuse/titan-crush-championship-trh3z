@@ -20,7 +20,32 @@ export function Hero() {
       }
     };
 
-    playVideo();
+    // Play video when it's ready
+    const handleCanPlay = () => {
+      playVideo();
+    };
+
+    // Ensure video keeps playing if it pauses unexpectedly
+    const handlePause = () => {
+      if (video.readyState >= 3) { // HAVE_FUTURE_DATA or higher
+        playVideo();
+      }
+    };
+
+    // Add event listeners
+    video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('pause', handlePause);
+
+    // Initial play attempt
+    if (video.readyState >= 3) {
+      playVideo();
+    }
+
+    // Cleanup
+    return () => {
+      video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('pause', handlePause);
+    };
   }, []);
 
   return (
