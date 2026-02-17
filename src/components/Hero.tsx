@@ -5,17 +5,17 @@ import { Button } from "@/components/ui/button";
 
 export function Hero() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const isIntentionalPauseRef = useRef(false);
+  const resumeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    let isIntentionalPause = false;
-
     // Attempt to play the video with error handling
     const playVideo = async () => {
       try {
-        isIntentionalPause = false;
+        isIntentionalPauseRef.current = false;
         await video.play();
       } catch (error) {
         console.warn('Video autoplay failed:', error);
@@ -35,8 +35,8 @@ export function Hero() {
       // 1. The video has enough data to play
       // 2. The pause wasn't intentional (programmatic)
       // 3. Small delay to prevent infinite loop
-      if (!isIntentionalPause && video.readyState >= 3) {
-        setTimeout(() => {
+      if (!isIntentionalPauseRef.current && video.readyState >= 3) {
+        resumeTimeoutRef.current = setTimeout(() => {
           if (!video.paused) return; // Already playing
           playVideo();
         }, 100);
@@ -54,7 +54,10 @@ export function Hero() {
 
     // Cleanup
     return () => {
-      isIntentionalPause = true;
+      isIntentionalPauseRef.current = true;
+      if (resumeTimeoutRef.current) {
+        clearTimeout(resumeTimeoutRef.current);
+      }
       video.removeEventListener('canplay', handleCanPlay);
       video.removeEventListener('pause', handlePause);
     };
