@@ -1,20 +1,43 @@
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 
 export function Hero() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Attempt to play the video with error handling
+    const playVideo = async () => {
+      try {
+        await video.play();
+      } catch (error) {
+        console.warn('Video autoplay failed:', error);
+        // Fallback: video will still show poster image
+      }
+    };
+
+    playVideo();
+  }, []);
+
   return (
     <section className="relative h-screen w-full flex items-center justify-center overflow-hidden">
       {/* Video Background */}
       <div className="absolute inset-0 w-full h-full">
         <div className="absolute inset-0 bg-black/60 z-10" />
         <video 
+          ref={videoRef}
           className="w-full h-full object-cover" 
           autoPlay 
           muted 
           loop 
           playsInline
+          preload="auto"
+          disablePictureInPicture
+          disableRemotePlayback
           poster="/images/hero-bg.png"
         >
             <source src="/videos/hero-bg.mp4" type="video/mp4" />
